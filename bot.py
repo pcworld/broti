@@ -64,6 +64,6 @@ class BrotiBotFactory(protocol.ClientFactory):
         
 
 if __name__ == "__main__":
-    chan = "kitinfo-test"
+    chan = "kitinfo"
     reactor.connectTCP('irc.freenode.net', 6667, BrotiBotFactory('#' + chan))
     reactor.run()
