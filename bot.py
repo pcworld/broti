@@ -13,11 +13,17 @@ class BrotiBot(irc.IRCClient):
         return self.factory.nickname
     nickname = property(_get_nickname)
 
+    def __init__(self):
+        self.commands = {}
+        self.actions = {}
+
     def signedOn(self):
         self.join(self.factory.channel)
         print "Signed on as %s." % (self.nickname,)
         
         stalking.load_module(self)
+        notify.load_module(self)
+        info.load_module(self)
 
     def joined(self, channel):
         print "Joined %s." % (channel,)
@@ -35,16 +41,24 @@ class BrotiBot(irc.IRCClient):
             replyto = user
         else:
             replyto = channel
-        print(replyto)
         
-        if msg.startswith('*help'):
-            info.overview(self, replyto)
-        elif msg.startswith('*notify'):
-            _, _, username = msg.partition(' ')
-            if username:
-                notify.add_notify(self, user, username)
+        if msg.startswith('*'):
+            parts = msg[1:].split()
+            for command in self.commands:
+                if parts[0] == command:
+                    for f in self.commands[command]:
+                        f(self, replyto, user, parts[1:])
 
-        notify.check_notify(self, user)
+        for f in self.actions['privmsg']:
+            f(self, replyto, user)
+
+    def hook_command(self, command, function):
+        self.commands.setdefault(command, [])
+        self.commands[command].append(function)
+
+    def hook_action(self, action, function):
+        self.actions.setdefault(action, [])
+        self.actions[action].append(function)
 
 
 class BrotiBotFactory(protocol.ClientFactory):
@@ -64,6 +78,6 @@ class BrotiBotFactory(protocol.ClientFactory):
         
 
 if __name__ == "__main__":
-    chan = "kitinfo"
+    chan = "kitinfo-test"
     reactor.connectTCP('irc.freenode.net', 6667, BrotiBotFactory('#' + chan))
     reactor.run()
