@@ -6,7 +6,7 @@ import sys
 from twisted.internet import reactor
 import sqlite3
 
-from modules import stalking
+from modules import stalking, notify, info
 
 class BrotiBot(irc.IRCClient):
     def _get_nickname(self):
@@ -29,7 +29,23 @@ class BrotiBot(irc.IRCClient):
         stalking.add_left(self, user)
 
     def privmsg(self, user, channel, msg):
-        print msg
+        user, _, host = user.partition('!')
+
+        if channel.strip('_') == self.factory.nickname:
+            replyto = user
+        else:
+            replyto = channel
+        print(replyto)
+        
+        if msg.startswith('*help'):
+            info.overview(self, replyto)
+        elif msg.startswith('*notify'):
+            _, _, username = msg.partition(' ')
+            if username:
+                notify.add_notify(self, user, username)
+
+        notify.check_notify(self, user)
+
 
 class BrotiBotFactory(protocol.ClientFactory):
     protocol = BrotiBot
@@ -48,6 +64,6 @@ class BrotiBotFactory(protocol.ClientFactory):
         
 
 if __name__ == "__main__":
-    chan = "kitinfo"
+    chan = "kitinfo-test"
     reactor.connectTCP('irc.freenode.net', 6667, BrotiBotFactory('#' + chan))
     reactor.run()
