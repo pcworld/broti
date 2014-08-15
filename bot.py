@@ -61,8 +61,9 @@ class BrotiBot(irc.IRCClient):
         self.actions[action].append(function)
 
     def execute_action(self, action, replyto, user):
-        for f in self.actions[action]:
-            f(self, replyto, user)
+        if action in self.actions:
+            for f in self.actions[action]:
+                f(self, replyto, user)
 
 
 class BrotiBotFactory(protocol.ClientFactory):
