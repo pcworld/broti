@@ -39,7 +39,7 @@ class BrotiBot(irc.IRCClient):
     def privmsg(self, user, channel, msg):
         user, _, host = user.partition('!')
 
-        if channel.strip('_') == self.nickname:
+        if channel == self.nickname:
             replyto = user
         else:
             replyto = channel
