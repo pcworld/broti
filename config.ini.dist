@@ -1,3 +1,4 @@
 [chat.freenode.net]
+nickname=broti
 channels=#kitinfo,#kitinfo-test
 modules=info,notify
