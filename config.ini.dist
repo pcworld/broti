@@ -1,0 +1,3 @@
+[chat.freenode.net]
+channels=#kitinfo,#kitinfo-test
+modules=info,notify

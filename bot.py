@@ -5,12 +5,13 @@ from twisted.internet import protocol
 import sys
 from twisted.internet import reactor
 import sqlite3
+import ConfigParser
+import importlib
 
-from modules import stalking, notify, info
 
 class BrotiBot(irc.IRCClient):
     def _get_nickname(self):
-        return self.factory.nickname
+        return self.factory.config['nickname']
     nickname = property(_get_nickname)
 
     def __init__(self):
@@ -18,39 +19,38 @@ class BrotiBot(irc.IRCClient):
         self.actions = {}
 
     def signedOn(self):
-        self.join(self.factory.channel)
-        print "Signed on as %s." % (self.nickname,)
-        
-        stalking.load_module(self)
-        notify.load_module(self)
-        info.load_module(self)
+        for channel in self.factory.config['channels'].split(','):
+            self.join(channel)
+        print("Signed on as %s." % (self.nickname,))
 
+        for module in self.factory.config['modules'].split(','):
+            m = importlib.import_module('.%s' % module, 'modules')
+            m.load_module(self)
+        
     def joined(self, channel):
-        print "Joined %s." % (channel,)
+        print("Joined %s." % (channel,))
     
     def userJoined(self, user, channel):
-        stalking.add_joined(self, user)
+        self.execute_action('userJoined', None, user)
     
     def userLeft(self, user, channel):
-        stalking.add_left(self, user)
+        self.execute_action('userLeft', None, user)
 
     def privmsg(self, user, channel, msg):
         user, _, host = user.partition('!')
 
-        if channel.strip('_') == self.factory.nickname:
+        if channel.strip('_') == self.nickname:
             replyto = user
         else:
             replyto = channel
         
         if msg.startswith('*'):
             parts = msg[1:].split()
-            for command in self.commands:
-                if parts[0] == command:
-                    for f in self.commands[command]:
-                        f(self, replyto, user, parts[1:])
+            if parts[0] in self.commands:
+                for f in self.commands[parts[0]]:
+                    f(self, replyto, user, parts[1:])
 
-        for f in self.actions['privmsg']:
-            f(self, replyto, user)
+        self.execute_action('privmsg', replyto, user)
 
     def hook_command(self, command, function):
         self.commands.setdefault(command, [])
@@ -60,24 +60,31 @@ class BrotiBot(irc.IRCClient):
         self.actions.setdefault(action, [])
         self.actions[action].append(function)
 
+    def execute_action(self, action, replyto, user):
+        for f in self.actions[action]:
+            f(self, replyto, user)
+
 
 class BrotiBotFactory(protocol.ClientFactory):
     protocol = BrotiBot
 
-    def __init__(self, channel, nickname='broti'):
-        self.channel = channel
-        self.nickname = nickname
+    def __init__(self, config):
         self.db = sqlite3.connect('db.sqlite')
+        self.config = config
 
     def clientConnectionLost(self, connector, reason):
-        print "Lost connection (%s), reconnecting." % (reason,)
+        print("Lost connection (%s), reconnecting." % (reason,))
         connector.connect()
 
     def clientConnectionFailed(self, connector, reason):
-        print "Could not connect: %s" % (reason,)
+        print("Could not connect: %s" % (reason,))
         
 
 if __name__ == "__main__":
-    chan = "kitinfo-test"
-    reactor.connectTCP('irc.freenode.net', 6667, BrotiBotFactory('#' + chan))
-    reactor.run()
+    config = ConfigParser.ConfigParser()
+    config.read('config.ini')
+
+    for server in config.sections():
+        c = dict(config.items(server))
+        reactor.connectTCP(server, 6667, BrotiBotFactory(c))
+        reactor.run()
