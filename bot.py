@@ -80,11 +80,27 @@ class BrotiBotFactory(protocol.ClientFactory):
         print("Could not connect: %s" % (reason,))
         
 
+def validate_section(config):
+    errors = []
+    if not 'nickname' in config:
+        errors.append('"nickname" missing')
+    if not 'channels' in config:
+        errors.append('"channels" missing')
+    if not 'modules' in config:
+        errors.append('"modules" missing')
+
+    return errors
+
 if __name__ == "__main__":
     config = ConfigParser.ConfigParser()
     config.read('config.ini')
 
     for server in config.sections():
         c = dict(config.items(server))
-        reactor.connectTCP(server, 6667, BrotiBotFactory(c))
-        reactor.run()
+        errors = validate_section(c)
+        if len(errors):
+            print('Section "%s" is invalid' % server)
+            print('\n'.join(errors))
+        else:
+            reactor.connectTCP(server, 6667, BrotiBotFactory(c))
+            reactor.run()
