@@ -8,6 +8,7 @@ import sqlite3
 import ConfigParser
 import importlib
 import re
+import logging
 
 
 class BrotiBot(irc.IRCClient):
@@ -23,14 +24,16 @@ class BrotiBot(irc.IRCClient):
     def signedOn(self):
         for channel in self.factory.config['channels'].split(','):
             self.join(channel)
-        print("Signed on as %s." % (self.nickname,))
+        self.factory.logger.info("Signed on as %s." % (self.nickname,))
 
         for module in self.factory.config['modules'].split(','):
+            self.factory.logger.info('Loading module "%s"' % module)
+
             m = importlib.import_module('.%s' % module, 'modules')
             m.load_module(self)
         
     def joined(self, channel):
-        print("Joined %s." % (channel,))
+        self.factory.logger.info("Joined %s." % (channel,))
     
     def userJoined(self, user, channel):
         self.execute_action('userJoined', None, user)
@@ -47,22 +50,24 @@ class BrotiBot(irc.IRCClient):
             replyto = channel
         
         if msg.startswith('*'):
-            self.execute_commands(msg, replyto, user)
+            self.execute_command(msg, replyto, user)
 
         self.execute_regexps(msg, replyto, user)
         self.execute_action('privmsg', replyto, user)
 
     def hook_command(self, command, function):
+        self.factory.logger.debug('Hooking to command "%s"' % command)
         self.commands.setdefault(command, [])
         self.commands[command].append(function)
 
     def hook_action(self, action, function):
+        self.factory.logger.debug('Hooking to action "%s"' % action)
         self.actions.setdefault(action, [])
         self.actions[action].append(function)
 
     def hook_regexp(self, regexp, function):
+        self.factory.logger.debug('Hooking to regexp "%s"' % regexp)
         self.regexps.append((regexp, function))
-        print('Hooking %s' % regexp)
 
     def execute_action(self, action, replyto, user):
         if action in self.actions:
@@ -89,13 +94,14 @@ class BrotiBotFactory(protocol.ClientFactory):
     def __init__(self, config):
         self.db = sqlite3.connect('db.sqlite')
         self.config = config
+        self.logger = logging.getLogger(__name__)
 
     def clientConnectionLost(self, connector, reason):
-        print("Lost connection (%s), reconnecting." % (reason,))
+        self.logger.warning("Lost connection (%s), reconnecting." % (reason,))
         connector.connect()
 
     def clientConnectionFailed(self, connector, reason):
-        print("Could not connect: %s" % (reason,))
+        self.logger.error("Could not connect: %s" % (reason,))
         
 
 def validate_section(config):
@@ -110,6 +116,8 @@ def validate_section(config):
     return errors
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG)
+
     config = ConfigParser.ConfigParser()
     config.read('config.ini')
 
