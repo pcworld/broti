@@ -3,6 +3,7 @@ import time
 watch_dict = {}
 
 # TODO: Check if watch_username is a valid user in channel
+# TODO: Delay notification until user is online too
 
 def add_notify(bot, replyto, username, args):
     if len(args) < 1:

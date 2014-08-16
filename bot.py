@@ -9,6 +9,7 @@ import ConfigParser
 import importlib
 import re
 import logging
+import threading
 
 
 class BrotiBot(irc.IRCClient):
@@ -68,6 +69,9 @@ class BrotiBot(irc.IRCClient):
     def hook_regexp(self, regexp, function):
         self.factory.logger.debug('Hooking to regexp "%s"' % regexp)
         self.regexps.append((regexp, function))
+
+    def hook_timeout(self, timeout, function, replyto):
+        threading.Timer(timeout, function, [self, replyto]).start()
 
     def execute_action(self, action, replyto, user):
         if action in self.actions:
