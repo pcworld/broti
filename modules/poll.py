@@ -9,12 +9,12 @@ def start_poll(bot, replyto, username, args):
     global poll_active
     global voted
 
-    print(args)
     if len(args) < 1:
         bot.msg(replyto, 'Please specify some options')
         return
-
-    print(args)
+    elif poll_active:
+        bot.msg(replyto, 'There already is a poll running.')
+        return
 
     poll_active = True
 
@@ -22,7 +22,6 @@ def start_poll(bot, replyto, username, args):
         % (username, ' '.join(args)))
 
     poll = dict([(option, 0) for option in args])
-    print(poll)
     bot.msg(replyto, 'Poll started. Choose one among %s with *vote. You have 2 minutes.' % ', '.join(args))
 
     bot.hook_timeout(120, end_poll, replyto)
@@ -34,9 +33,6 @@ def do_poll(bot, replyto, username, args):
 
     if len(args) < 1:
         return
-
-    print(args)
-    print(poll)
 
     if username in voted:
         bot.msg(replyto, 'You already voted. I am democratic, so each ' \
@@ -57,6 +53,8 @@ def end_poll(bot, replyto):
     bot.msg(replyto, 'Poll has ended. Here are the results:')
     for option, count in poll.items():
         bot.msg(replyto, '%s: %d' % (option, count))
+
+    poll_active = False
 
 def load_module(bot):
     bot.hook_command('poll', start_poll)
