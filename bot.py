@@ -7,6 +7,7 @@ from twisted.internet import reactor
 import sqlite3
 import ConfigParser
 import importlib
+import re
 
 
 class BrotiBot(irc.IRCClient):
@@ -17,6 +18,7 @@ class BrotiBot(irc.IRCClient):
     def __init__(self):
         self.commands = {}
         self.actions = {}
+        self.regexps = []
 
     def signedOn(self):
         for channel in self.factory.config['channels'].split(','):
@@ -45,11 +47,9 @@ class BrotiBot(irc.IRCClient):
             replyto = channel
         
         if msg.startswith('*'):
-            parts = msg[1:].split()
-            if parts[0] in self.commands:
-                for f in self.commands[parts[0]]:
-                    f(self, replyto, user, parts[1:])
+            self.execute_commands(msg, replyto, user)
 
+        self.execute_regexps(msg, replyto, user)
         self.execute_action('privmsg', replyto, user)
 
     def hook_command(self, command, function):
@@ -60,10 +60,27 @@ class BrotiBot(irc.IRCClient):
         self.actions.setdefault(action, [])
         self.actions[action].append(function)
 
+    def hook_regexp(self, regexp, function):
+        self.regexps.append((regexp, function))
+        print('Hooking %s' % regexp)
+
     def execute_action(self, action, replyto, user):
         if action in self.actions:
             for f in self.actions[action]:
                 f(self, replyto, user)
+
+    def execute_regexps(self, msg, replyto, user):
+        for r, f in self.regexps:
+            m = re.match(r, msg)
+            if m:
+                f(self, msg, replyto, user, m.groups())
+
+    def execute_command(self, msg, replyto, user):
+        parts = msg[1:].split()
+        if parts[0] in self.commands:
+            for f in self.commands[parts[0]]:
+                f(self, replyto, user, parts[1:])
+
 
 
 class BrotiBotFactory(protocol.ClientFactory):
