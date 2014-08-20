@@ -58,7 +58,7 @@ class Bot(irc.bot.SingleServerIRCBot):
             user, _, host = e.source.partition('!')
             c.privmsg(user, msg)
 
-    def user_online(self. user):
+    def user_online(self, user):
         for channel in self.channels.values():
             if channel.has_user(user):
                 return True
