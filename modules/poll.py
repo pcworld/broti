@@ -2,57 +2,71 @@ import time
 
 poll_active = False
 poll = {}
+allowed_users = set()
 voted = set()
 
-def start_poll(bot, replyto, username, args):
+def start_poll(bot, c, e, args):
     global poll
     global poll_active
     global voted
+    global allowed_users 
 
-    if len(args) < 1:
-        bot.msg(replyto, 'Please specify some options')
+    if len(args) < 2:
+        bot.reply(c, e, 'Please specify some options')
         return
     elif poll_active:
-        bot.msg(replyto, 'There already is a poll running.')
+        bot.reply(c, e, 'There already is a poll running.')
+        return
+    elif e.target not in bot.channels:
+        bot.reply(c, e, 'This command can only be used in channels.')
         return
 
     poll_active = True
+    allowed_users = set(bot.channels[e.target].users())
+    print(allowed_users)
 
-    bot.factory.logger.debug('Starting poll for %s with options %s' \
-        % (username, ' '.join(args)))
+    bot.logger.debug('Starting poll for %s with options %s' \
+        % (e.source, ' '.join(args)))
 
     poll = dict([(option, 0) for option in args])
-    bot.msg(replyto, 'Poll started. Choose one among %s with *vote. You have 2 minutes.' % ', '.join(args))
+    bot.reply(c, e,'Poll started. Choose one among %s with *vote. You have 2 minutes.' % ', '.join(args))
 
-    bot.hook_timeout(120, end_poll, replyto)
+    bot.hook_timeout(120, end_poll, c, e.target)
 
-def do_poll(bot, replyto, username, args):
+def do_poll(bot, c, e, args):
     global poll
     global poll_active
     global voted
+    global allowed_users 
 
     if len(args) < 1:
         return
 
+    username, _, _ = e.source.partition('!')
+    vote = args[0]
+    if not poll_active:
+        bot.reply(c, e, 'No poll active at the moment. You may start one ' \
+                'with *poll')
     if username in voted:
-        bot.msg(replyto, 'You already voted. I am democratic, so each ' \
-                'user only has one vote.')
-    elif args[0] not in poll:
-        bot.msg(replyto, 'This option is not part of the poll')
+        bot.reply(c, e, 'You already voted. I am democratic, so each ' \
+                'user has only one vote.')
+    elif username not in allowed_users:
+        bot.reply(c, e, 'You have not been in the channel, when the ' \
+                'voting began. You are not allowed to vote.')
+    elif vote not in poll:
+        bot.reply(c, e, 'This option is not part of the poll.')
     else:
-        bot.factory.logger.debug('%s voted on %s' % (username, args[0]))
-
         voted.add(username)
-        poll[args[0]] += 1
+        poll[vote] += 1
+        bot.reply(c, e, 'Your vote has been accepted.')
 
-def end_poll(bot, replyto):
+def end_poll(bot, c, replyto):
     global poll
     global poll_active
-    global voted
 
-    bot.msg(replyto, 'Poll has ended. Here are the results:')
+    bot.privmsg(replyto, 'Poll has ended. Here are the results:')
     for option, count in poll.items():
-        bot.msg(replyto, '%s: %d' % (option, count))
+        bot.privmsg(replyto, '%s: %d' % (option, count))
 
     poll_active = False
 

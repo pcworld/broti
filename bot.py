@@ -1,136 +1,116 @@
-#!/bin/env python2
+#!/usr/bin/env python
 
-from twisted.words.protocols import irc
-from twisted.internet import protocol
-import sys
-from twisted.internet import reactor
-import sqlite3
-import ConfigParser
+import irc.bot
+import irc.strings
 import importlib
-import re
-import logging
-import threading
+import configparser, logging
+import re, threading
 
+class Bot(irc.bot.SingleServerIRCBot):
+    def __init__(self, server, port, config):
+        self.logger = logging.getLogger(server)
 
-class BrotiBot(irc.IRCClient):
-    def _get_nickname(self):
-        return self.factory.config['nickname']
-    nickname = property(_get_nickname)
+        nickname = config['nickname']
+        irc.bot.SingleServerIRCBot.__init__(self, [(server, port)], nickname, nickname)
+        self.config = config
 
-    def __init__(self):
         self.commands = {}
         self.actions = {}
         self.regexps = []
 
-    def signedOn(self):
-        for channel in self.factory.config['channels'].split(','):
-            self.join(channel)
-        self.factory.logger.info("Signed on as %s." % (self.nickname,))
+    def on_nicknameinuse(self, c, e):
+        c.nick(c.get_nickname() + "_")
 
-        for module in self.factory.config['modules'].split(','):
-            self.factory.logger.info('Loading module "%s"' % module)
+    def on_welcome(self, c, e):
+        for channel in self.config['channels'].split(','):
+            c.join(channel)
 
+        import modules
+        for module in self.config['modules'].split(','):
+            self.logger.info('Loading module "%s"' % module)
+        
             m = importlib.import_module('.%s' % module, 'modules')
             m.load_module(self)
-        
-    def joined(self, channel):
-        self.factory.logger.info("Joined %s." % (channel,))
-    
-    def userJoined(self, user, channel):
-        self.execute_action('userJoined', None, user)
-    
-    def userLeft(self, user, channel):
-        self.execute_action('userLeft', None, user)
 
-    def privmsg(self, user, channel, msg):
-        user, _, host = user.partition('!')
+        print(self.channels)
+    
+    def on_join(self, c, e):
+        self.execute_action(c, e, 'userJoined')
 
-        if channel == self.nickname:
-            replyto = user
+    def on_privmsg(self, c, e):
+        self.on_msg(c, e)
+
+    def on_pubmsg(self, c, e):
+        self.on_msg(c, e)
+
+    def on_msg(self, c, e):
+        args = e.arguments[0].split()
+        if args[0].startswith('*'):
+            self.execute_command(c, e, args[0][1:], args[1:])
+
+        self.execute_regexps(c, e, ' '.join(e.arguments))
+        self.execute_action(c, e, 'privmsg')
+
+    def reply(self, c, e, msg):
+        if e.type == 'pubmsg':
+            c.privmsg(e.target, msg)
         else:
-            replyto = channel
-        
-        if msg.startswith('*'):
-            self.execute_command(msg, replyto, user)
+            user, _, host = e.source.partition('!')
+            c.privmsg(user, msg)
 
-        self.execute_regexps(msg, replyto, user)
-        self.execute_action('privmsg', replyto, user)
+    def user_online(user, bot):
+        for channel in bot.channels.values():
+            if channel.has_user(user):
+                return True
+
+        return False
 
     def hook_command(self, command, function):
-        self.factory.logger.debug('Hooking to command "%s"' % command)
+        self.logger.debug('Hooking to command "%s"' % command)
         self.commands.setdefault(command, [])
         self.commands[command].append(function)
 
     def hook_action(self, action, function):
-        self.factory.logger.debug('Hooking to action "%s"' % action)
+        self.logger.debug('Hooking to action "%s"' % action)
         self.actions.setdefault(action, [])
         self.actions[action].append(function)
 
     def hook_regexp(self, regexp, function):
-        self.factory.logger.debug('Hooking to regexp "%s"' % regexp)
+        self.logger.debug('Hooking to regexp "%s"' % regexp)
         self.regexps.append((regexp, function))
 
-    def hook_timeout(self, timeout, function, replyto):
-        threading.Timer(timeout, function, [self, replyto]).start()
+    def hook_timeout(self, timeout, function, c, replyto):
+        threading.Timer(timeout, function, [c, self, replyto]).start()
 
-    def execute_action(self, action, replyto, user):
+    def execute_action(self, c, e, action):
         if action in self.actions:
             for f in self.actions[action]:
-                f(self, replyto, user)
+                f(self, c, e)
 
-    def execute_regexps(self, msg, replyto, user):
+    def execute_regexps(self, c, e, msg):
         for r, f in self.regexps:
             m = re.match(r, msg)
             if m:
-                f(self, msg, replyto, user, m.groups())
+                f(self, c, e, m.groups())
 
-    def execute_command(self, msg, replyto, user):
-        parts = msg[1:].split()
-        if parts[0] in self.commands:
-            for f in self.commands[parts[0]]:
-                f(self, replyto, user, parts[1:])
+    def execute_command(self, c, e, cmd, args):
+        if cmd in self.commands:
+            for f in self.commands[cmd]:
+                f(self, c, e, args)
 
-
-
-class BrotiBotFactory(protocol.ClientFactory):
-    protocol = BrotiBot
-
-    def __init__(self, config):
-        self.db = sqlite3.connect('db.sqlite')
-        self.config = config
-        self.logger = logging.getLogger(__name__)
-
-    def clientConnectionLost(self, connector, reason):
-        self.logger.warning("Lost connection (%s), reconnecting." % (reason,))
-        connector.connect()
-
-    def clientConnectionFailed(self, connector, reason):
-        self.logger.error("Could not connect: %s" % (reason,))
-        
-
-def validate_section(config):
-    errors = []
-    if not 'nickname' in config:
-        errors.append('"nickname" missing')
-    if not 'channels' in config:
-        errors.append('"channels" missing')
-    if not 'modules' in config:
-        errors.append('"modules" missing')
-
-    return errors
-
-if __name__ == "__main__":
+def main():
     logging.basicConfig(level=logging.DEBUG)
 
-    config = ConfigParser.ConfigParser()
+    config = configparser.ConfigParser()
     config.read('config.ini')
 
-    for server in config.sections():
-        c = dict(config.items(server))
-        errors = validate_section(c)
-        if len(errors):
-            print('Section "%s" is invalid' % server)
-            print('\n'.join(errors))
-        else:
-            reactor.connectTCP(server, 6667, BrotiBotFactory(c))
-            reactor.run()
+    for section in config.sections():
+        host, _, port = section.partition(':')
+        if not port:
+            port = 6667
+
+        bot = Bot(host, port, dict(config.items(section)))
+        bot.start()
+
+if __name__ == "__main__":
+    main()
