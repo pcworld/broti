@@ -10,3 +10,5 @@ def do_rage(bot, c, e, args):
 
 def load_module(bot):
     bot.hook_command('rage', do_rage)
+
+    return [hash(do_rage)]

@@ -7,3 +7,5 @@ def overview(bot, c, e, args):
 
 def load_module(bot):
     bot.hook_command('help', overview)
+
+    return [hash(overview)]

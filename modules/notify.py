@@ -30,3 +30,5 @@ def check_notify(bot, c, e):
 def load_module(bot):
     bot.hook_command('notify', add_notify)
     bot.hook_action('privmsg', check_notify)
+
+    return [hash(add_notify), hash(check_notify)]

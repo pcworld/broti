@@ -73,3 +73,5 @@ def end_poll(bot, c, replyto):
 def load_module(bot):
     bot.hook_command('poll', start_poll)
     bot.hook_command('vote', do_poll)
+
+    return [hash(start_poll), hash(do_poll)]

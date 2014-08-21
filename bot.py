@@ -3,7 +3,7 @@
 import irc.bot
 import irc.strings
 import importlib
-import configparser, logging, Pyro4
+import configparser, logging
 import re, threading
 from multiprocessing.connection import Listener
 
@@ -25,6 +25,8 @@ class BotManipulationListener(threading.Thread):
                     if msg['server'] == self.bot.server:
                         if msg['action'] == 'module.add':
                             self.bot.load_module(msg['value'])
+                        elif msg['action'] == 'module.del':
+                            self.bot.unload_module(msg['value'])
                 except EOFError: # remote connection closed
                     break
         
@@ -42,7 +44,7 @@ class Bot(irc.bot.SingleServerIRCBot):
         self.server = server
         self.start_listener()
         
-        self.loaded_modules = set()
+        self.loaded_modules = {}
 
         self.commands = {}
         self.actions = {}
@@ -73,8 +75,20 @@ class Bot(irc.bot.SingleServerIRCBot):
             self.logger.info('Loading module "%s"' % module)
 
             m = importlib.import_module('.%s' % module, 'modules')
-            m.load_module(self)
-            self.loaded_modules.add(module)
+            hashes = m.load_module(self)
+            
+            print(hashes)
+            self.loaded_modules[module] = hashes
+
+    def unload_module(self, module):
+        try:
+            for h in self.loaded_modules[module]:
+                self.unhook_command(h)
+                self.unhook_action(h)
+                self.unhook_regexp(h)
+            del(self.loaded_modules[module])
+        except KeyError:
+            self.logger.debug('Module "%s" is not loaded' % module)
 
     def on_join(self, c, e):
         self.execute_action(c, e, 'userJoined')
@@ -112,14 +126,42 @@ class Bot(irc.bot.SingleServerIRCBot):
         self.commands.setdefault(command, [])
         self.commands[command].append(function)
 
+    def unhook_command(self, h):
+        self.logger.debug('Unhooking command with function pointer ' \
+                'hash "%s"' % h)
+        for command in self.commands:
+            try:
+                idx = list(map(hash, self.commands[command])).index(h)
+                del(self.commands[command][idx])
+                print('found command')
+            except ValueError:
+                pass
+
     def hook_action(self, action, function):
         self.logger.debug('Hooking to action "%s"' % action)
         self.actions.setdefault(action, [])
         self.actions[action].append(function)
 
+    def unhook_action(self, h):
+        self.logger.debug('Unhooking action with function pointer ' \
+                'hash "%s"' % h)
+        for action in self.actions:
+            try:
+                idx = list(map(hash, self.actions[action])).index(h)
+                del(self.actions[action][idx])
+            except ValueError:
+                pass
+
     def hook_regexp(self, regexp, function):
         self.logger.debug('Hooking to regexp "%s"' % regexp)
         self.regexps.append((regexp, function))
+
+    def unhook_regexp(self, h):
+        self.logger.debug('Unhooking regexp with function pointer ' \
+                'hash "%s"' % h)
+        for regexp, function in self.regexps:
+            if hash(function) == h:
+                del(self.regexps[(regexp, function)])
 
     def hook_timeout(self, timeout, function, c, replyto):
         threading.Timer(timeout, function, [c, self, replyto]).start()

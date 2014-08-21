@@ -9,3 +9,5 @@ def parse_latex(bot, c, e, matches):
 
 def load_module(bot):
     bot.hook_regexp('^\$(.+)\$$', parse_latex)
+
+    return [hash(parse_latex)]
