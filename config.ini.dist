@@ -2,3 +2,4 @@
 nickname=broti
 channels=#kitinfo,#kitinfo-test
 modules=info,notify
+key=

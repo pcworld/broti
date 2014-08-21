@@ -3,8 +3,34 @@
 import irc.bot
 import irc.strings
 import importlib
-import configparser, logging
+import configparser, logging, Pyro4
 import re, threading
+from multiprocessing.connection import Listener
+
+class BotManipulationListener(threading.Thread):
+    def __init__(self, bot):
+        threading.Thread.__init__(self)
+        self.bot = bot
+
+    def run(self):
+        address = ('localhost', 6000)
+        key = self.bot.config['key']
+        listener = Listener(address, authkey=bytes(key, 'ascii'))
+
+        while True: # listen to infinite connections, one at a time
+            conn = listener.accept()
+            while True: # let one connection pass multiple commands
+                try:
+                    msg = conn.recv()
+                    if msg['server'] == self.bot.server:
+                        if msg['action'] == 'module.add':
+                            self.bot.load_module(msg['value'])
+                except EOFError: # remote connection closed
+                    break
+        
+            conn.close()
+        listener.close()
+
 
 class Bot(irc.bot.SingleServerIRCBot):
     def __init__(self, server, port, config):
@@ -13,10 +39,20 @@ class Bot(irc.bot.SingleServerIRCBot):
         nickname = config['nickname']
         irc.bot.SingleServerIRCBot.__init__(self, [(server, port)], nickname, nickname)
         self.config = config
+        self.server = server
+        self.start_listener()
+        
+        self.loaded_modules = set()
 
         self.commands = {}
         self.actions = {}
         self.regexps = []
+
+    def start_listener(self):
+        self.logger.info('Starting listener for online bot manipulation')
+
+        t = BotManipulationListener(self)
+        t.start()
 
     def on_nicknameinuse(self, c, e):
         c.nick(c.get_nickname() + "_")
@@ -27,13 +63,19 @@ class Bot(irc.bot.SingleServerIRCBot):
 
         import modules
         for module in self.config['modules'].split(','):
+            self.load_module(module)
+
+    def load_module(self, module):
+        if module in self.loaded_modules:
+            self.logger.debug('Module "%s" is already loaded' % module)
+            return
+        else:
             self.logger.info('Loading module "%s"' % module)
-        
+
             m = importlib.import_module('.%s' % module, 'modules')
             m.load_module(self)
+            self.loaded_modules.add(module)
 
-        print(self.channels)
-    
     def on_join(self, c, e):
         self.execute_action(c, e, 'userJoined')
 
