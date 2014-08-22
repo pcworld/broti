@@ -3,7 +3,7 @@ import random
 
 chain_length = 2
 stop_word = u'\x02'
-max_words = 7
+max_words = 30
 
 def split_message(msg, length):
     sentence = msg
@@ -90,4 +90,4 @@ def load_module(bot):
     bot.hook_regexp('.*(?:^|\W)broti(?:$|\W).*', talk_back)
     bot.hook_action('privmsg', log_conversation)
 
-    return [hash(talk_back)]
+    return [hash(talk_back), hash(log_conversation)]
