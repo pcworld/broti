@@ -28,6 +28,8 @@ class BotManipulationListener(threading.Thread):
                             self.bot.load_module(msg['value'])
                         elif msg['action'] == 'module.del':
                             self.bot.unload_module(msg['value'])
+                        elif msg['action'] == 'channel.join':
+                            self.bot.connection.join(msg['value'])
                 except EOFError: # remote connection closed
                     break
         
