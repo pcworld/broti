@@ -1,25 +1,32 @@
 import time
 
-def add_joined(bot, replyto, username):
-    cur = bot.factory.db.cursor()
-    cur.execute('''INSERT INTO stalking (username, date, action)
-        VALUES (?, ?, ?)''', (username, time.time(), 'join'))
-    bot.factory.db.commit()
+def add_joined(bot, c, e):
+    username, _, _ = e.source.partition('!')
+
+    cur = bot.db.cursor()
+    cur.execute('''INSERT INTO stalking (username, date, action, channel)
+        VALUES (?, ?, ?, ?)''', (username, time.time(), 'join', e.target))
+    bot.db.commit()
     
-def add_left(bot, replyto, username):
-    cur = bot.factory.db.cursor()
-    cur.execute('''INSERT INTO stalking (username, date, action)
-        VALUES (?, ?, ?)''', (username, time.time(), 'leave'))
-    bot.factory.db.commit()
+def add_left(bot, c, e):
+    username, _, _ = e.source.partition('!')
+
+    cur = bot.db.cursor()
+    cur.execute('''INSERT INTO stalking (username, date, action, channel)
+        VALUES (?, ?, ?, ?)''', (username, time.time(), 'leave', e.target))
+    bot.db.commit()
 
 def load_module(bot):
-    cur = bot.factory.db.cursor()
-    bot.factory.db.execute('''CREATE TABLE IF NOT EXISTS stalking (
+    cur = bot.db.cursor()
+    cur.execute('''CREATE TABLE IF NOT EXISTS stalking (
         username TEXT,
         date INTEGER,
-        action TEXT
+        action TEXT,
+        channel TEXT
         )''')
-    bot.factory.db.commit()
+    bot.db.commit()
 
     bot.hook_action('userJoined', add_joined)
     bot.hook_action('userLeft', add_left)
+
+    return [hash(add_joined), hash(add_left)]

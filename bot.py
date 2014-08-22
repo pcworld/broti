@@ -6,6 +6,7 @@ import importlib
 import configparser, logging
 import re, threading
 from multiprocessing.connection import Listener
+import sqlite3
 
 class BotManipulationListener(threading.Thread):
     def __init__(self, bot):
@@ -34,6 +35,11 @@ class BotManipulationListener(threading.Thread):
         listener.close()
 
 
+# TODO: Dynamic loading of modules using sqlite not possible,
+# because sqlite objects can only be used in one thread
+# TODO: Add depends to each module so that bot can load
+# stuff dynamic and also give error messages if e.g. database
+# is not available
 class Bot(irc.bot.SingleServerIRCBot):
     def __init__(self, server, port, config):
         self.logger = logging.getLogger(server)
@@ -43,6 +49,7 @@ class Bot(irc.bot.SingleServerIRCBot):
         self.config = config
         self.server = server
         self.start_listener()
+        self.db = sqlite3.connect(config['db'])
         
         self.loaded_modules = {}
 
@@ -76,13 +83,15 @@ class Bot(irc.bot.SingleServerIRCBot):
 
             m = importlib.import_module('.%s' % module, 'modules')
             hashes = m.load_module(self)
-            
-            print(hashes)
-            self.loaded_modules[module] = hashes
+
+            self.loaded_modules[module] = {
+                    'object': m,
+                    'hashes': hashes
+            }
 
     def unload_module(self, module):
         try:
-            for h in self.loaded_modules[module]:
+            for h in self.loaded_modules[module]['hashes']:
                 self.unhook_command(h)
                 self.unhook_action(h)
                 self.unhook_regexp(h)
@@ -92,6 +101,9 @@ class Bot(irc.bot.SingleServerIRCBot):
 
     def on_join(self, c, e):
         self.execute_action(c, e, 'userJoined')
+
+    def on_part(self, c, e):
+        self.execute_action(c, e, 'userLeft')
 
     def on_privmsg(self, c, e):
         self.on_msg(c, e)
