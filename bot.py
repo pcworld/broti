@@ -171,9 +171,9 @@ class Bot(irc.bot.SingleServerIRCBot):
     def unhook_regexp(self, h):
         self.logger.debug('Unhooking regexp with function pointer ' \
                 'hash "%s"' % h)
-        for regexp, function in self.regexps:
+        for i, (regexp, function) in enumerate(self.regexps):
             if hash(function) == h:
-                del(self.regexps[(regexp, function)])
+                del(self.regexps[i])
 
     def hook_timeout(self, timeout, function, c, replyto):
         threading.Timer(timeout, function, [c, self, replyto]).start()
@@ -187,7 +187,7 @@ class Bot(irc.bot.SingleServerIRCBot):
         for r, f in self.regexps:
             m = re.match(r, msg)
             if m:
-                f(self, c, e, m.groups())
+                f(self, c, e, [m.group(0)] + list(m.groups()))
 
     def execute_command(self, c, e, cmd, args):
         if cmd in self.commands:
