@@ -12,3 +12,6 @@ def load_module(bot):
     bot.hook_command('rage', do_rage)
 
     return [hash(do_rage)]
+
+def commands():
+    return [('rage', 'use it when you\'re angry', 'rage')]

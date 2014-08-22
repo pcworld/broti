@@ -32,3 +32,7 @@ def load_module(bot):
     bot.hook_action('privmsg', check_notify)
 
     return [hash(add_notify), hash(check_notify)]
+
+def commands():
+    return [('notify', 'Get notified as soon as a person writes a message',
+             'notify username')]

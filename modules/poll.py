@@ -75,3 +75,7 @@ def load_module(bot):
     bot.hook_command('vote', do_poll)
 
     return [hash(start_poll), hash(do_poll)]
+
+def commands():
+    return [('poll', 'Start a poll', 'poll options[ ...]'),
+            ('vote', 'Vote in an active poll', 'poll option')]
