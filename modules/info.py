@@ -24,10 +24,14 @@ def overview(bot, c, e, args):
         bot.reply(c, e, 'Commands: %s' \
                 % ' '.join(map(lambda x: '*%s' % x, commands)))
 
+def bot_usage(bot, c, e, matches):
+    overview(bot, c, e, [])
+
 def load_module(bot):
     bot.hook_command('help', overview)
+    bot.hook_regexp('broti\W?\s*help', bot_usage)
 
-    return [hash(overview)]
+    return [hash(overview), hash(bot_usage)]
 
 def commands():
     return [('help', 'Display possible commands', 'help [command]')]
