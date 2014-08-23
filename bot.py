@@ -8,6 +8,8 @@ import re, threading
 from multiprocessing.connection import Listener
 import sqlite3
 
+import modules, providers
+
 class BotManipulationListener(threading.Thread):
     def __init__(self, bot):
         threading.Thread.__init__(self)
@@ -50,8 +52,8 @@ class Bot(irc.bot.SingleServerIRCBot):
         irc.bot.SingleServerIRCBot.__init__(self, [(server, port)], nickname, nickname)
         self.config = config
         self.server = server
+        self.provides = {}
         self.start_listener()
-        self.db = sqlite3.connect(config['db'])
         
         self.loaded_modules = {}
 
@@ -72,7 +74,6 @@ class Bot(irc.bot.SingleServerIRCBot):
         for channel in self.config['channels'].split(','):
             c.join(channel)
 
-        import modules
         for module in self.config['modules'].split(','):
             self.load_module(module)
 
@@ -84,12 +85,36 @@ class Bot(irc.bot.SingleServerIRCBot):
             self.logger.info('Loading module "%s"' % module)
 
             m = importlib.import_module('.%s' % module, 'modules')
+            if hasattr(m, 'requires'):
+                success = self.load_requirements(m.requires)
+                if not success:
+                    self.logger.error('Could not load module "%s"' % module)
+                    return
+
             hashes = m.load_module(self)
 
             self.loaded_modules[module] = {
                     'object': m,
                     'hashes': hashes
             }
+
+    def load_requirements(self, requirements):
+        results = []
+        for requirement in requirements:
+            result = self.load_requirement(requirement)
+            results.append(result)
+
+        return all(results)
+
+    def load_requirement(self, requirement):
+        m = importlib.import_module('.%s' % requirement, 'providers')
+        obj = m.load(self)
+        if obj is None:
+            self.logger.error('Could not load provider "%s"' % requirement)
+            return False
+        else:
+            self.provides[requirement] = m.load(self)
+            return True
 
     def unload_module(self, module):
         try:
