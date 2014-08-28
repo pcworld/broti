@@ -6,10 +6,12 @@ to_be_removed = set()
 
 def ping(bot, c, e, args):
     username, _, _ = e.source.partition('!')
+    bot.reply('Adding you to the ping list')
     bot.hook_timeout(timeout, functools.partial(pong, username), c, username)
 
 def ping_stop(bot, c, e, args):
     username, _, _ = e.source.partition('!')
+    bot.reply('Removing you from the ping list')
     to_be_removed.add(username)
 
 def pong(username, bot, c, replyto):
