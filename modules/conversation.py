@@ -19,10 +19,8 @@ def split_message(msg, length):
             yield words[i:i + length + 1]
 
 def random_probability(l):
-    print(l)
     max_value = sum(el[1] for el in l)
     l = [(el[0], el[1] / max_value) for el in l]
-    print(l)
     
     cur = random.random()
     for element, prob in l:

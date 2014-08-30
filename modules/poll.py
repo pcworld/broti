@@ -64,7 +64,7 @@ def end_poll(bot, c, replyto):
     global poll
     global poll_active
 
-    bot.privmsg(replyto, 'Poll has ended. Here are the results:')
+    c.privmsg(replyto, 'Poll has ended. Here are the results:')
     for option, count in poll.items():
         bot.privmsg(replyto, '%s: %d' % (option, count))
 
