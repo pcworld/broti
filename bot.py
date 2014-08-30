@@ -59,6 +59,7 @@ class Bot(irc.bot.SingleServerIRCBot):
 
         self.commands = {}
         self.actions = {}
+        self.actions_oneshot = {}
         self.regexps = []
 
     def start_listener(self):
@@ -133,7 +134,7 @@ class Bot(irc.bot.SingleServerIRCBot):
         self.execute_action(c, e, 'userLeft')
 
     def on_privmsg(self, c, e):
-        self.on_msg(c, e)
+        self.execute_action(c, e, 'privmsg')
 
     def on_pubmsg(self, c, e):
         self.on_msg(c, e)
@@ -145,6 +146,9 @@ class Bot(irc.bot.SingleServerIRCBot):
 
         self.execute_regexps(c, e, ' '.join(e.arguments))
         self.execute_action(c, e, 'privmsg')
+
+    def on_privnotice(self, c, e):
+        self.execute_action(c, e, 'privnotice')
 
     def reply(self, c, e, msg):
         if e.type == 'pubmsg':
@@ -177,9 +181,14 @@ class Bot(irc.bot.SingleServerIRCBot):
                 pass
 
     def hook_action(self, action, function):
-        self.logger.debug('Hooking to action "%s"' % action)
+        self.logger.debug('hooking to action "%s"' % action)
         self.actions.setdefault(action, [])
         self.actions[action].append(function)
+
+    def hook_action_oneshot(self, action, function):
+        self.logger.debug('hooking to action "%s" for oneshot' % action)
+        self.actions_oneshot.setdefault(action, [])
+        self.actions_oneshot[action].append(function)
 
     def unhook_action(self, h):
         self.logger.debug('Unhooking action with function pointer ' \
@@ -209,6 +218,11 @@ class Bot(irc.bot.SingleServerIRCBot):
         if action in self.actions:
             for f in self.actions[action]:
                 f(self, c, e)
+        if action in self.actions_oneshot:
+            while len(self.actions_oneshot[action]) > 0:
+                f = self.actions_oneshot[action].pop()
+                f(self, c, e)
+
 
     def execute_regexps(self, c, e, msg):
         for r, f in self.regexps:
