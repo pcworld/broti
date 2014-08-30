@@ -1,23 +1,22 @@
-import time
-import functools
+import functools, threading
 
 timeout = 60
 to_be_removed = set()
 
 def ping(bot, c, e, args):
     username, _, _ = e.source.partition('!')
-    bot.reply('Adding you to the ping list')
+    bot.reply(c, e, 'Adding you to the ping list')
     bot.hook_timeout(timeout, functools.partial(pong, username), c, username)
 
 def ping_stop(bot, c, e, args):
     username, _, _ = e.source.partition('!')
-    bot.reply('Removing you from the ping list')
+    bot.reply(c, e, 'Removing you from the ping list')
     to_be_removed.add(username)
 
-def pong(username, bot, c, replyto):
+def pong(bot, c, username):
     if username not in to_be_removed:
-        threading.Timer(timeout, pong, [username, self, c, replyto]).start()
-    bot.msg(username, 'ping pong pung')
+        threading.Timer(timeout, pong, [bot, c, username]).start()
+    bot.privmsg(username, 'ping pong pung')
 
 def load_module(bot):
     bot.hook_command('ping', ping)
