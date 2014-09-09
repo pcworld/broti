@@ -71,6 +71,9 @@ class Bot(irc.bot.SingleServerIRCBot):
         c.nick(c.get_nickname() + "_")
 
     def on_welcome(self, c, e):
+        # Fix encoding problems
+        self.connection.buffer.errors = 'replace'
+        
         for channel in self.config['channels'].split(','):
             c.join(channel)
 
