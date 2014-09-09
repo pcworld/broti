@@ -3,4 +3,5 @@ nickname=broti
 channels=#kitinfo,#kitinfo-test
 modules=info,notify
 key=
+owner=brati
 db=bot.sqlite
