@@ -50,3 +50,8 @@ Whenever a service is required by a module (per `requires`), the bot
 will load the additional service and provide it to the modules via an
 attribute `provides` in the bot class. Modules can then access their
 service through `bot.provides[providername]`.
+
+
+License
+-------
+This program is licensed under the Simplified BSD License.
