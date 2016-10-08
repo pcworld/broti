@@ -137,7 +137,8 @@ class Bot(irc.bot.SingleServerIRCBot):
         self.execute_action(c, e, 'userLeft')
 
     def on_privmsg(self, c, e):
-        self.execute_action(c, e, 'privmsg')
+        #self.execute_action(c, e, 'privmsg')
+        self.on_msg(c, e)
 
     def on_pubmsg(self, c, e):
         self.on_msg(c, e)

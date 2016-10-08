@@ -20,10 +20,12 @@ def do_command(command, bot, c, e):
     username, _, level = e.arguments[0].split()
     if username != bot.config['owner'] or int(level) < 3:
         c.privmsg(bot.config['owner'], 'Admin has to be authenticated')
+        return
 
     if len(command) < 2:
         c.privmsg(bot.config['owner'],
                   'At least two arguments are required')
+        return
     
     if command[0] == 'module.add':
         self.bot.load_module(command[1])
@@ -31,6 +33,8 @@ def do_command(command, bot, c, e):
         self.bot.unload_module(command[1])
     elif command[0] == 'channel.join':
         c.join(command[1])
+    elif command[0] == 'channel.part':
+        c.part(command[1])
 
 def load_module(bot):
     bot.hook_command('manage', manage)

@@ -87,7 +87,7 @@ def load_module(bot):
         CONSTRAINT unq UNIQUE (beginning, continuation))''')
     bot.provides['db'].commit()
 
-    bot.hook_regexp('.*(?:^|\W)broti(?:$|\W).*', talk_back)
+    #bot.hook_regexp('.*(?:^|\W)broti(?:$|\W).*', talk_back)
     bot.hook_action('privmsg', log_conversation)
 
     return [hash(talk_back), hash(log_conversation)]

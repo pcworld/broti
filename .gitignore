@@ -1,4 +1,6 @@
 *.sqlite
 *.pyc
 config.ini
+hooks.ini
 *.sw*
+env
