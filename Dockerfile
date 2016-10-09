@@ -8,12 +8,11 @@ RUN pacman -Sy --noconfirm \
 RUN useradd -m -s /bin/sh broti
 COPY broti /home/broti/broti
 COPY requirements.txt setup.py config.ini /home/broti/
-RUN cd /home/broti \
+RUN chown -R broti:broti /home/broti \
+    && su broti -c 'cd /home/broti \
     && virtualenv -p python3 env \
     && source env/bin/activate \
     && pip install -r requirements.txt \
-    && python setup.py install
+    && python setup.py install'
 
-# Use shell form, because we have to activate the work environment
-ENTRYPOINT source /home/broti/env/bin/activate; \
-    /home/broti/env/bin/broti bot /home/broti/config.ini
+ENTRYPOINT ["su", "broti", "-c", "/bin/sh -c 'source /home/broti/env/bin/activate; /home/broti/env/bin/broti bot /home/broti/config.ini'"]
