@@ -7,13 +7,13 @@ RUN pacman -Sy --noconfirm \
     openssl
 RUN useradd -m -s /bin/sh broti
 COPY broti /home/broti/broti
-COPY requirements.txt /home/broti/
+COPY requirements.txt setup.py config.ini /home/broti/
 RUN cd /home/broti \
     && virtualenv -p python3 env \
     && source env/bin/activate \
     && pip install -r requirements.txt \
-    && cd broti
+    && python setup.py install
 
-# TODO: Add real command to execute broti when it is possible
-# without being in broti folder
-CMD ["/bin/bash"]
+# Use shell form, because we have to activate the work environment
+ENTRYPOINT source /home/broti/env/bin/activate; \
+    /home/broti/env/bin/broti bot /home/broti/config.ini

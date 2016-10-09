@@ -8,7 +8,7 @@ import re, threading
 from multiprocessing.connection import Listener
 import sqlite3
 
-import modules, providers
+from broti import modules, providers
 
 class BotManipulationListener(threading.Thread):
     def __init__(self, bot):
@@ -88,7 +88,7 @@ class Bot(irc.bot.SingleServerIRCBot):
         else:
             self.logger.info('Loading module "%s"' % module)
 
-            m = importlib.import_module('.%s' % module, 'modules')
+            m = importlib.import_module('.%s' % module, 'broti.modules')
             if hasattr(m, 'requires'):
                 success = self.load_requirements(m.requires)
                 if not success:
@@ -111,7 +111,7 @@ class Bot(irc.bot.SingleServerIRCBot):
         return all(results)
 
     def load_requirement(self, requirement):
-        m = importlib.import_module('.%s' % requirement, 'providers')
+        m = importlib.import_module('.%s' % requirement, 'broti.providers')
         obj = m.load(self)
         if obj is None:
             self.logger.error('Could not load provider "%s"' % requirement)
