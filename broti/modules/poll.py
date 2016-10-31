@@ -30,7 +30,7 @@ def start_poll(bot, c, e, args):
     poll = dict([(option, 0) for option in args])
     bot.reply(c, e,'Poll started. Choose one among %s with *vote. You have 2 minutes.' % ', '.join(args))
 
-    bot.hook_timeout(10, end_poll, c, e)
+    bot.hook_timeout(120, end_poll, c, e)
 
 def do_poll(bot, c, e, args):
     global poll
