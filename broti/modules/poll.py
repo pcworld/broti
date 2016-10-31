@@ -23,7 +23,6 @@ def start_poll(bot, c, e, args):
 
     poll_active = True
     allowed_users = set(bot.channels[e.target].users())
-    print(allowed_users)
 
     bot.logger.debug('Starting poll for %s with options %s' \
         % (e.source, ' '.join(args)))
@@ -31,7 +30,7 @@ def start_poll(bot, c, e, args):
     poll = dict([(option, 0) for option in args])
     bot.reply(c, e,'Poll started. Choose one among %s with *vote. You have 2 minutes.' % ', '.join(args))
 
-    bot.hook_timeout(120, end_poll, c, e.target)
+    bot.hook_timeout(10, end_poll, c, e)
 
 def do_poll(bot, c, e, args):
     global poll
@@ -60,13 +59,13 @@ def do_poll(bot, c, e, args):
         poll[vote] += 1
         bot.reply(c, e, 'Your vote has been accepted.')
 
-def end_poll(bot, c, replyto):
+def end_poll(bot, c, e):
     global poll
     global poll_active
 
-    c.privmsg(replyto, 'Poll has ended. Here are the results:')
+    bot.reply(c, e, 'Poll has ended. Here are the results:')
     for option, count in poll.items():
-        bot.privmsg(replyto, '%s: %d' % (option, count))
+        bot.reply(c, e, '%s: %d' % (option, count))
 
     poll_active = False
 
