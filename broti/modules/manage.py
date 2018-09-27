@@ -28,9 +28,9 @@ def do_command(command, bot, c, e):
         return
     
     if command[0] == 'module.add':
-        self.bot.load_module(command[1])
+        bot.load_module(command[1])
     elif command[0] == 'module.del':
-        self.bot.unload_module(command[1])
+        bot.unload_module(command[1])
     elif command[0] == 'channel.join':
         c.join(command[1])
     elif command[0] == 'channel.part':
