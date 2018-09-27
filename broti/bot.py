@@ -49,7 +49,15 @@ class Bot(irc.bot.SingleServerIRCBot):
         self.logger = logging.getLogger(server)
 
         nickname = config['nickname']
-        irc.bot.SingleServerIRCBot.__init__(self, [(server, port)], nickname, nickname)
+        password = config['password']
+
+        server_credentials = None
+        if len(password):
+            server_credentials = '%s:%s' % (nickname, password)
+
+        irc.bot.SingleServerIRCBot.__init__(
+                self, [(server, port, server_credentials)], nickname, nickname)
+
         self.config = config
         self.server = server
         self.provides = {}

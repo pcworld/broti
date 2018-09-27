@@ -1,5 +1,6 @@
 [chat.freenode.net]
 nickname=broti
+password=
 channels=#kitinfo,#kitinfo-test
 modules=info,notify
 key=
