@@ -7,6 +7,7 @@ import os
 questions = {}
 user_answers = {}
 current_solution = None
+possible_solutions = None
 
 
 requires = ['db']
@@ -15,6 +16,7 @@ requires = ['db']
 def start_quiz(bot, c, e, args):
     # TODO: I assume global state breaks if the bot is in more than one channel
     global current_solution
+    global possible_solutions
     global questions
     global user_answers
 
@@ -44,21 +46,42 @@ def start_quiz(bot, c, e, args):
         % (question['question'], timeout, question['options'][0],
            question['options'][1], question['options'][2],
            question['options'][3])
+
+    right_letter = None
+    if question['options'][0] in question['answers']:
+        right_letter = 'a'
+    elif question['options'][1] in question['answers']:
+        right_letter = 'b'
+    elif question['options'][2] in question['answers']:
+        right_letter = 'c'
+    elif question['options'][3] in question['answers']:
+        right_letter = 'd'
+
     bot.reply(c, e, full_question)
     current_solution = question['answers']
+    if right_letter:
+        current_solution.append(right_letter)
+
+    possible_solutions = [question['options'][0], question['options'][1],
+                          question['options'][2], question['options'][3],
+                          'a', 'b', 'c', 'd']
     user_answers = {}
 
     bot.hook_timeout(timeout, end_quiz, c, e)
 
 
 def save_answers(bot, c, e, matches):
+    global current_solution
+    global possible_solutions
+
     if not current_solution:
         return
 
     username, _, _ = e.source.partition('!')
-    print(matches)
-    print(e.arguments)
-    user_answers[username] = e.arguments[0]
+    answer = e.arguments[0]
+
+    if answer.lower() in map(str.lower, possible_solutions):
+        user_answers[username] = e.arguments[0]
 
 
 def end_quiz(bot, c, e):
@@ -66,10 +89,12 @@ def end_quiz(bot, c, e):
     global user_answers
 
     correct_users = [user for user, answer in user_answers.items()
-                     if answer in current_solution]
+                     if answer.lower() in map(str.lower, current_solution)]
 
-    bot.reply(c, e, 'Quiz has ended. Correct solution is: %s'
-              % ', '.join(current_solution))
+    solutionstr = ', '.join(current_solution)
+    res = 'Quiz has ended. Correct solution is: %s (%d out of %d were right)' \
+        % (solutionstr, len(correct_users), len(user_answers))
+    bot.reply(c, e, res)
 
     conn = bot.provides['db'].get_conn()
     cursor = conn.cursor()
