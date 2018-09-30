@@ -7,6 +7,7 @@ import os
 questions = {}
 user_answers = {}
 current_solution = None
+formatted_solution = None
 possible_solutions = None
 
 
@@ -16,6 +17,7 @@ requires = ['db']
 def start_quiz(bot, c, e, args):
     # TODO: I assume global state breaks if the bot is in more than one channel
     global current_solution
+    global formatted_solution
     global possible_solutions
     global questions
     global user_answers
@@ -59,8 +61,12 @@ def start_quiz(bot, c, e, args):
 
     bot.reply(c, e, full_question)
     current_solution = question['answers']
+    long_solution = ', '.join(current_solution)
     if right_letter:
         current_solution.append(right_letter)
+        formatted_solution = '%s) %s' % (right_letter, long_solution)
+    else:
+        formatted_solution = long_solution
 
     possible_solutions = [question['options'][0], question['options'][1],
                           question['options'][2], question['options'][3],
@@ -85,15 +91,15 @@ def save_answers(bot, c, e, matches):
 
 
 def end_quiz(bot, c, e):
+    global formatted_solution
     global current_solution
     global user_answers
 
     correct_users = [user for user, answer in user_answers.items()
                      if answer.lower() in map(str.lower, current_solution)]
 
-    solutionstr = ', '.join(current_solution)
     res = 'Quiz has ended. Correct solution is: %s (%d out of %d were right)' \
-        % (solutionstr, len(correct_users), len(user_answers))
+        % (formatted_solution, len(correct_users), len(user_answers))
     bot.reply(c, e, res)
 
     conn = bot.provides['db'].get_conn()
