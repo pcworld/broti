@@ -71,7 +71,7 @@ format:
 }
 ```
 
-`question` and `answer` are required, `options` is optional. `answers` is an
+`question` and `answers` are required, `options` is optional. `answers` is an
 array of all correct answers, in case there are multiple possible answers.
 
 
