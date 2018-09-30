@@ -1,8 +1,10 @@
 import json
 import random
+import glob
+import os
 
 
-questions = []
+questions = {}
 current_solution = None
 
 
@@ -18,10 +20,20 @@ def start_quiz(bot, c, e, args):
         # TODO: Should also be usable somewhere else
         bot.reply(c, e, 'This command can only be used in channels.')
         return
+    elif len(args) < 1:
+        datasets = ', '.join(questions.keys())
+        bot.reply(c, e, 'Please specify a dataset name: %s' % datasets)
+        return
 
     bot.logger.debug('Starting quiz')
 
-    question = random.choice(questions)
+    dataset = args[0]
+
+    if dataset not in questions:
+        bot.reply(c, e, 'Dataset "%s" does not exist' % dataset)
+        return
+
+    question = random.choice(questions[dataset])
     timeout = 20 + 25 * question['level']
     full_question = '%s (%d secs): a) %s, b) %s, c) %s, d) %s' \
         % (question['question'], timeout, question['options'][0],
@@ -45,16 +57,14 @@ def end_quiz(bot, c, e):
 def load_module(bot):
     global questions
 
-    data = []
-    files = [
-        'data/wwm/questions.json',
-    ]
-    for filepath in files:
+    for filepath in glob.glob('data/quiz/*.json'):
+        set_name = os.path.splitext(os.path.basename(filepath))[0]
+        data = []
         with open(filepath) as f:
             for line in f:
                 data.append(json.loads(line))
 
-    questions = data
+        questions[set_name] = data
 
     bot.hook_command('quiz', start_quiz)
 
@@ -62,4 +72,4 @@ def load_module(bot):
 
 
 def commands():
-    return [('quiz', 'Start a new round of a quiz', 'quiz')]
+    return [('quiz', 'Start a new round of a quiz', 'quiz set-name')]
