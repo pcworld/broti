@@ -40,7 +40,7 @@ def start_quiz(bot, c, e, args):
            question['options'][1], question['options'][2],
            question['options'][3])
     bot.reply(c, e, full_question)
-    current_solution = question['answer']
+    current_solution = question['answers']
 
     bot.hook_timeout(timeout, end_quiz, c, e)
 
@@ -49,7 +49,7 @@ def end_quiz(bot, c, e):
     global current_solution
 
     bot.reply(c, e, 'Quiz has ended. Correct solution is: %s'
-              % current_solution)
+              % ', '.join(current_solution))
 
     current_solution = None
 
