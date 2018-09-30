@@ -21,12 +21,16 @@ def start_quiz(bot, c, e, args):
 
     bot.logger.debug('Starting quiz')
 
-    topic, question, solution = random.choice(questions)
-    bot.reply(c, e, '%s: %s (solution will be revealed in 2 minutes)'
-              % (topic, question))
-    current_solution = solution
+    question = random.choice(questions)
+    timeout = 10 + 20 * question['level']
+    full_question = '%s (%d secs): a) %s, b) %s, c) %s, d) %s' \
+        % (question['question'], timeout, question['options'][0],
+           question['options'][1], question['options'][2],
+           question['options'][3])
+    bot.reply(c, e, full_question)
+    current_solution = question['answer']
 
-    bot.hook_timeout(120, end_quiz, c, e)
+    bot.hook_timeout(timeout, end_quiz, c, e)
 
 
 def end_quiz(bot, c, e):
@@ -43,22 +47,14 @@ def load_module(bot):
 
     data = []
     files = [
-        'data/squad/questions_dev.json',
-        'data/squad/questions_train.json',
+        'data/wwm/questions.json',
     ]
     for filepath in files:
         with open(filepath) as f:
-            data += json.load(f)['data']
+            for line in f:
+                data.append(json.loads(line))
 
-    for topic_elem in data:
-        topic = topic_elem['title']
-        for par in topic_elem['paragraphs']:
-            for qas in par['qas']:
-                if not qas['is_impossible'] and len(qas['answers']) > 0:
-                    question = qas['question']
-                    answer = qas['answers'][0]['text']
-
-                    questions.append((topic, question, answer))
+    questions = data
 
     bot.hook_command('quiz', start_quiz)
 
