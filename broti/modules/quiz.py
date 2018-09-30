@@ -22,7 +22,7 @@ def start_quiz(bot, c, e, args):
     bot.logger.debug('Starting quiz')
 
     question = random.choice(questions)
-    timeout = 10 + 20 * question['level']
+    timeout = 20 + 25 * question['level']
     full_question = '%s (%d secs): a) %s, b) %s, c) %s, d) %s' \
         % (question['question'], timeout, question['options'][0],
            question['options'][1], question['options'][2],
