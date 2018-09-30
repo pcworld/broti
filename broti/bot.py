@@ -120,12 +120,12 @@ class Bot(irc.bot.SingleServerIRCBot):
 
     def load_requirement(self, requirement):
         m = importlib.import_module('.%s' % requirement, 'broti.providers')
-        obj = m.load(self)
+        obj = m.Provider(self)
         if obj is None:
             self.logger.error('Could not load provider "%s"' % requirement)
             return False
         else:
-            self.provides[requirement] = m.load(self)
+            self.provides[requirement] = obj
             return True
 
     def unload_module(self, module):

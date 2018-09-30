@@ -51,6 +51,10 @@ will load the additional service and provide it to the modules via an
 attribute `provides` in the bot class. Modules can then access their
 service through `bot.provides[providername]`.
 
+A provider must be implemented as a class `Provider` in a python file named
+according to the provider name. The class may implement any methods it wants,
+consumers will receive an object of the class and can use the methods.
+
 
 Available Modules
 -----------------
