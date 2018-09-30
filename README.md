@@ -66,12 +66,13 @@ format:
 ```json
 {
     "question": "What is this bot's name?",
-    "answer": "broti",
+    "answers": ["broti"],
     "options": ["kuchi", "broti", "wursti", "apfeli"]
 }
 ```
 
-`question` and `answer` are required, `options` is optional.
+`question` and `answer` are required, `options` is optional. `answers` is an
+array of all correct answers, in case there are multiple possible answers.
 
 
 License
