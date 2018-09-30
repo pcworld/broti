@@ -52,6 +52,28 @@ attribute `provides` in the bot class. Modules can then access their
 service through `bot.provides[providername]`.
 
 
+Available Modules
+-----------------
+
+Currently, the following modules are available.
+
+### Quiz
+
+Quiz is a module to post a quiz question. It can load questions from
+`jsonline`-files (each line one JSON document) with a questions in this
+format:
+
+```json
+{
+    "question": "What is this bot's name?",
+    "answer": "broti",
+    "options": ["kuchi", "broti", "wursti", "apfeli"]
+}
+```
+
+`question` and `answer` are required, `options` is optional.
+
+
 License
 -------
 This program is licensed under the Simplified BSD License.
