@@ -71,8 +71,8 @@ format:
 {
     "question": "What is this bot's name?",
     "answers": ["broti"],
-    "options": ["kuchi", "broti", "wursti", "apfeli"]
-    "time": 30,
+    "options": ["kuchi", "broti", "wursti", "apfeli"],
+    "time": 30
 }
 ```
 
