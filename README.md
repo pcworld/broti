@@ -78,6 +78,17 @@ format:
 `question` and `answers` are required, `options` is optional. `answers` is an
 array of all correct answers, in case there are multiple possible answers.
 
+Thus, a valid questions document `example.json` might look like this:
+
+```json
+{"question": "What is this bot's name?", "answers": ["broti"]}
+{"question": "Which is larger?", "answers": ["9"], "options": ["9", "5"]}
+```
+
+In this case, one question contains options that will be presented to the
+audience. The other question is without any options and the audience has to
+answer directly.
+
 
 License
 -------
