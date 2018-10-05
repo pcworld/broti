@@ -122,8 +122,9 @@ def quiz_score(bot, c, e, args):
                       ORDER BY score DESC
                       LIMIT 10''')
     score_outs = []
-    for row in cursor:
-        score_outs.append('%s: %d' % row)
+    for username, score in cursor:
+        score_outs.append('%s: %d' % (username[0] + '\ufeff' + username[1:], score))
+        # use ZERO WIDTH NO-BREAK SPACE so that users' clients don't notify them
 
     bot.reply(c, e, ', '.join(score_outs))
 
