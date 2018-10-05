@@ -145,7 +145,8 @@ def load_module(bot):
         data = []
         with open(filepath) as f:
             for line in f:
-                data.append(json.loads(line))
+                if not line.startswith('#') and line.strip(): # not comment or empty line
+                    data.append(json.loads(line))
 
         questions[set_name] = data
 
