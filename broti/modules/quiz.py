@@ -2,6 +2,7 @@ import json
 import random
 import glob
 import os
+import string
 
 
 questions = {}
@@ -16,6 +17,7 @@ requires = ['db']
 
 def start_quiz(bot, c, e, args):
     # TODO: I assume global state breaks if the bot is in more than one channel
+    global current_question
     global current_solution
     global formatted_solution
     global possible_solutions
@@ -42,37 +44,23 @@ def start_quiz(bot, c, e, args):
         bot.reply(c, e, 'Dataset "%s" does not exist' % dataset)
         return
 
-    question = random.choice(questions[dataset])
+    current_question = question = random.choice(questions[dataset])
     timeout = 20 + 25 * question['level']
-    full_question = '%s (%d secs): a) %s, b) %s, c) %s, d) %s' \
-        % (question['question'], timeout, question['options'][0],
-           question['options'][1], question['options'][2],
-           question['options'][3])
-
-    right_letter = None
-    if question['options'][0] in question['answers']:
-        right_letter = 'a'
-    elif question['options'][1] in question['answers']:
-        right_letter = 'b'
-    elif question['options'][2] in question['answers']:
-        right_letter = 'c'
-    elif question['options'][3] in question['answers']:
-        right_letter = 'd'
+    full_question = '%s (%d secs)' % (question['question'], timeout)
+    if 'options' in question:
+           full_question += ': ' + ', '.join([string.ascii_lowercase[i] + ') ' + option for i, option in enumerate(question['options'])])
 
     bot.reply(c, e, full_question)
     current_solution = question['answers']
-    long_solution = ', '.join(current_solution)
-    if right_letter:
-        current_solution.append(right_letter)
-        formatted_solution = '%s) %s' % (right_letter, long_solution)
+    if 'options' in question:
+        current_solution += [string.ascii_lowercase[i] for i, answer in enumerate(question['options']) if answer in question['answers']]
+        formatted_solution = ', '.join([string.ascii_lowercase[i] + ') ' + answer for i, answer in enumerate(question['options']) if answer in question['answers']])
+        possible_solutions = question['options'] + list(string.ascii_lowercase[:len(question['options'])])
     else:
-        formatted_solution = long_solution
+        formatted_solution = ', '.join(question['answers'])
+        possible_solutions = question['answers']
 
-    possible_solutions = [question['options'][0], question['options'][1],
-                          question['options'][2], question['options'][3],
-                          'a', 'b', 'c', 'd']
     user_answers = {}
-
     bot.hook_timeout(timeout, end_quiz, c, e)
 
 
@@ -92,14 +80,16 @@ def save_answers(bot, c, e, matches):
 
 def end_quiz(bot, c, e):
     global formatted_solution
+    global current_question
     global current_solution
     global user_answers
 
     correct_users = [user for user, answer in user_answers.items()
                      if answer.lower() in map(str.lower, current_solution)]
 
-    res = 'Quiz has ended. Correct solution is: %s (%d out of %d were right)' \
-        % (formatted_solution, len(correct_users), len(user_answers))
+    res = 'Quiz has ended. Correct solution is: %s (%d %swere right)' \
+        % (formatted_solution, len(correct_users),
+           'out of ' + str(len(user_answers)) + ' ' if 'options' in current_question else '')
     bot.reply(c, e, res)
 
     conn = bot.provides['db'].get_conn()
