@@ -51,7 +51,7 @@ def start_quiz(bot, c, e, args):
            full_question += ': ' + ', '.join([string.ascii_lowercase[i] + ') ' + option for i, option in enumerate(question['options'])])
 
     bot.reply(c, e, full_question)
-    current_solution = question['answers']
+    current_solution = question['answers'].copy()
     if 'options' in question:
         current_solution += [string.ascii_lowercase[i] for i, answer in enumerate(question['options']) if answer in question['answers']]
         formatted_solution = ', '.join([string.ascii_lowercase[i] + ') ' + answer for i, answer in enumerate(question['options']) if answer in question['answers']])
