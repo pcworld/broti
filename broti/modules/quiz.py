@@ -113,7 +113,6 @@ def quiz_score(bot, c, e, args):
     conn = bot.provides['db'].get_conn()
     cursor = conn.cursor()
 
-    print(args)
     if len(args) > 0:
         username = args[0]
 
