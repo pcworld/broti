@@ -163,4 +163,4 @@ def load_module(bot):
 
 def commands():
     return [('quiz', 'Start a new round of a quiz', 'quiz set-name'),
-            ('quiz-score [user]', 'Show the current score', 'quiz-score')]
+            ('quiz-score', 'Show the current score', 'quiz-score [user]')]
