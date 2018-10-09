@@ -105,18 +105,32 @@ def end_quiz(bot, c, e):
 
 
 def quiz_score(bot, c, e, args):
+    def prevent_highlight(username):
+        # use ZERO WIDTH NO-BREAK SPACE so that users' clients don't notify
+        # them
+        return username[0] + '\ufeff' + username[1:]
+
     conn = bot.provides['db'].get_conn()
     cursor = conn.cursor()
 
-    cursor.execute('''SELECT username, score FROM quiz_score
-                      ORDER BY score DESC
-                      LIMIT 10''')
-    score_outs = []
-    for username, score in cursor:
-        score_outs.append('%s: %d' % (username[0] + '\ufeff' + username[1:], score))
-        # use ZERO WIDTH NO-BREAK SPACE so that users' clients don't notify them
+    print(args)
+    if len(args) > 0:
+        username = args[0]
 
-    bot.reply(c, e, ', '.join(score_outs))
+        cursor.execute('''SELECT score FROM quiz_score
+                          WHERE username = ?''', (username,))
+        row = cursor.fetchone()
+        score = row[0] if row else 0
+        bot.reply(c, e, '%s: %d' % (prevent_highlight(username), score))
+    else:
+        cursor.execute('''SELECT username, score FROM quiz_score
+                          ORDER BY score DESC
+                          LIMIT 10''')
+        score_outs = []
+        for username, score in cursor:
+            score_outs.append('%s: %d' % (prevent_highlight(username), score))
+
+        bot.reply(c, e, ', '.join(score_outs))
 
 
 def load_module(bot):
@@ -149,4 +163,4 @@ def load_module(bot):
 
 def commands():
     return [('quiz', 'Start a new round of a quiz', 'quiz set-name'),
-            ('quiz-score', 'Show the current score', 'quiz-score')]
+            ('quiz-score [user]', 'Show the current score', 'quiz-score')]
