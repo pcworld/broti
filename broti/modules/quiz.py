@@ -108,15 +108,19 @@ def quiz_score(bot, c, e, args):
     conn = bot.provides['db'].get_conn()
     cursor = conn.cursor()
 
-    cursor.execute('''SELECT username, score FROM quiz_score
-                      ORDER BY score DESC
-                      LIMIT 10''')
+    cursor.execute('SELECT username, score FROM quiz_score '
+               +  ('WHERE username = ? ' if len(args) >= 1 else '')
+               + '''ORDER BY score DESC
+                    LIMIT 10''', args[:1])
     score_outs = []
     for username, score in cursor:
         score_outs.append('%s: %d' % (username[0] + '\ufeff' + username[1:], score))
         # use ZERO WIDTH NO-BREAK SPACE so that users' clients don't notify them
 
-    bot.reply(c, e, ', '.join(score_outs))
+    if score_outs:
+        bot.reply(c, e, ', '.join(score_outs))
+    else:
+        bot.reply(c, e, 'User not in database')
 
 
 def load_module(bot):
@@ -149,4 +153,4 @@ def load_module(bot):
 
 def commands():
     return [('quiz', 'Start a new round of a quiz', 'quiz set-name'),
-            ('quiz-score', 'Show the current score', 'quiz-score')]
+            ('quiz-score', 'Show the current score', 'quiz-score [nick]')]
