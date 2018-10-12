@@ -107,6 +107,9 @@ def end_quiz(bot, c, e):
         res += '.'
     bot.reply(c, e, res)
 
+    if 'explanation' in current_question and current_question['explanation']:
+        bot.reply(c, e, current_question['explanation'])
+
     conn = bot.provides['db'].get_conn()
     cursor = conn.cursor()
     for i, username in enumerate(correct_users):
