@@ -47,7 +47,7 @@ def start_quiz(bot, c, e, args):
         return
 
     current_question = question = random.choice(questions[dataset])
-    timeout = 20 + 25 * question['level']
+    timeout = question['time'] if 'time' in question else 20 + 25 * question['level']
     full_question = '%s (%d secs)' % (question['question'], timeout)
     if 'options' in question:
            full_question += ': ' + ', '.join([string.ascii_lowercase[i] + ') ' + option for i, option in enumerate(question['options'])])
