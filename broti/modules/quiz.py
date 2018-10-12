@@ -3,10 +3,12 @@ import random
 import glob
 import os
 import string
+from collections import OrderedDict
 
 
 questions = {}
-user_answers = {}
+user_answers = OrderedDict()
+current_question = None
 current_solution = None
 formatted_solution = None
 possible_solutions = None
@@ -60,7 +62,7 @@ def start_quiz(bot, c, e, args):
         formatted_solution = ', '.join(question['answers'])
         possible_solutions = question['answers']
 
-    user_answers = {}
+    user_answers = OrderedDict()
     bot.hook_timeout(timeout, end_quiz, c, e)
 
 
@@ -75,6 +77,8 @@ def save_answers(bot, c, e, matches):
     answer = e.arguments[0]
 
     if answer.lower() in map(str.lower, possible_solutions):
+        if username in user_answers:
+            user_answers.move_to_end(username)
         user_answers[username] = e.arguments[0]
 
 
@@ -87,29 +91,36 @@ def end_quiz(bot, c, e):
     correct_users = [user for user, answer in user_answers.items()
                      if answer.lower() in map(str.lower, current_solution)]
 
-    res = 'Quiz has ended. Correct solution is: %s (%d %swere right)' \
+    # Scores: If there were correct answers, in total we reward as many points as users participated in the quiz.
+    # The user with the first correct answer is rewarded 2 * base_score points, all other correct users are rewarded base_score points each.
+    # This scheme incentivizes that many users participate, and correctly answering difficult questions (user answers are spread out evenly among the options) results in a higher reward. Furthermore the first correct user gets a bonus over imitators.
+    # Note that this does not work well when a question does not have any 'options', as the number of participants cannot be measured.
+    base_score = len(user_answers) / (1 + len(correct_users))
+
+    res = 'Quiz has ended. Correct solution is: %s (%d %swere right).' \
         % (formatted_solution, len(correct_users),
            'out of ' + str(len(user_answers)) + ' ' if 'options' in current_question else '')
+    if correct_users:
+        res += ' %.1f p. for %s' % (2 * base_score, prevent_highlight(correct_users[0]))
+        if len(correct_users) > 1:
+            res += ' (first), %.1f p. for rest' % base_score
+        res += '.'
     bot.reply(c, e, res)
 
     conn = bot.provides['db'].get_conn()
     cursor = conn.cursor()
-    for username in correct_users:
+    for i, username in enumerate(correct_users):
         cursor.execute('''INSERT OR IGNORE INTO quiz_score (username, score)
                           VALUES (?, ?)''', (username, 0))
-        cursor.execute('''UPDATE quiz_score SET score = score + 1
-                          WHERE username = ?''', (username,))
+        score = 2 * base_score if i == 0 else base_score # user with first correct answer gets bonus
+        cursor.execute('''UPDATE quiz_score SET score = score + ?
+                          WHERE username = ?''', (score, username))
         conn.commit()
 
     current_solution = None
 
 
 def quiz_score(bot, c, e, args):
-    def prevent_highlight(username):
-        # use ZERO WIDTH NO-BREAK SPACE so that users' clients don't notify
-        # them
-        return username[0] + '\ufeff' + username[1:]
-
     conn = bot.provides['db'].get_conn()
     cursor = conn.cursor()
 
@@ -162,4 +173,9 @@ def load_module(bot):
 
 def commands():
     return [('quiz', 'Start a new round of a quiz', 'quiz set-name'),
-            ('quiz-score', 'Show the current score', 'quiz-score [user]')]
+            ('quiz-score', 'Show the current score. Each quiz rewards as many points as the number of players who participate. The first correct user gets twice the points.', 'quiz-score [user]')]
+
+
+def prevent_highlight(username):
+    # use ZERO WIDTH NO-BREAK SPACE so that users' clients don't notify them
+    return username[0] + '\ufeff' + username[1:]
