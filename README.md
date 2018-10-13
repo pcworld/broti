@@ -72,14 +72,18 @@ format:
     "question": "What is this bot's name?",
     "answers": ["broti"],
     "options": ["kuchi", "broti", "wursti", "apfeli"],
-    "time": 30
+    "time": 30,
+    "explanation": "The bot is called broti, because this contains all the characters from bot"
 }
 ```
 
-`question` and `answers` are required, `options` and `time` are optional.
+`question` and `answers` are required, `options`, `time` and
+`explanation` are optional.
 `answers` is an array of all correct answers, in case there are multiple
 possible answers. `time` is the time to wait before the solution is shown
 in seconds. If you do not specify `time`, a default time is used.
+`explanation` is an optional text that is displayed after the answer was
+shown. This can be used to explain why this is the correct answer.
 
 Thus, a valid questions document `example.json` might look like this:
 
