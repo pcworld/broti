@@ -1,0 +1,18 @@
+image: python:3.7
+
+stages:
+  - sonarqube
+
+sonarqube:
+  stage: sonarqube
+  before_script:
+    - apt-get -y update
+    - apt-get -y install unzip
+    - apt-get -y install pylint
+    - wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-3.2.0.1227-linux.zip
+    - unzip sonar-scanner-cli-3.2.0.1227-linux.zip
+  script:
+    - "pylint $(find ./broti -iname \"*.py\" -print) -r n --msg-template=\"{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}\" > pylint-report.txt || true"
+    - sonar-scanner-3.2.0.1227-linux/bin/sonar-scanner -Dsonar.login=$SONAR_LOGIN
+  only:
+    - master
