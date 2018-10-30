@@ -163,7 +163,11 @@ def load_module(bot):
         with open(filepath) as f:
             for line in f:
                 if not line.startswith('#') and line.strip(): # not comment or empty line
-                    data.append(json.loads(line))
+                    question = json.loads(line)
+                    # remove empty options (they might exist due to conversion from other formats)
+                    if 'options' in question:
+                        question['options'] = [o for o in question['options'] if o]
+                    data.append(question)
 
         questions[set_name] = data
 
