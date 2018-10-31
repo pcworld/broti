@@ -88,6 +88,7 @@ class Bot(irc.bot.SingleServerIRCBot):
 
         for module in self.config['modules'].split(','):
             self.load_module(module)
+            self.execute_action(c, e, 'welcome')
 
     def load_module(self, module):
         if module in self.loaded_modules:
