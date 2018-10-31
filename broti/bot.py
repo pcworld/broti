@@ -225,7 +225,9 @@ class Bot(irc.bot.SingleServerIRCBot):
                 del(self.regexps[i])
 
     def hook_timeout(self, timeout, function, c, replyto):
-        threading.Timer(timeout, function, [self, c, replyto]).start()
+        timer = threading.Timer(timeout, function, [self, c, replyto])
+        timer.start()
+        return timer
 
     def execute_action(self, c, e, action):
         if action in self.actions:
