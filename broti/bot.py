@@ -247,8 +247,12 @@ class Bot(irc.bot.SingleServerIRCBot):
 
     def execute_command(self, c, e, cmd, args):
         if cmd in self.commands:
-            for f in self.commands[cmd]:
-                f(self, c, e, args)
+            try:
+                for f in self.commands[cmd]:
+                    f(self, c, e, args)
+            except:
+                self.reply(c, e, 'Imma stupid bot.')
+                logging.exception('Command "%s" failed' % cmd)
 
 def main():
     logging.basicConfig(level=logging.DEBUG)
