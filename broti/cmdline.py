@@ -28,8 +28,7 @@ def start_bot(argv):
 
     for section in config.sections():
         host, _, port = section.partition(':')
-        if not port:
-            port = 6667
+        port = int(port) if port else 6667
 
         bot = Bot(host, port, dict(config.items(section)))
         bot.start()
