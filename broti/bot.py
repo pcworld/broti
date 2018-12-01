@@ -152,6 +152,11 @@ class Bot(irc.bot.SingleServerIRCBot):
         self.on_msg(c, e)
 
     def on_msg(self, c, e):
+        # Ignore messages that begin with a space (if users don't wish to trigger the bot
+        # and to prevent exception with empty args as str.split() removes leading spaces)
+        if e.arguments[0][0].isspace():
+            return
+
         args = e.arguments[0].split()
         if args[0].startswith('*'):
             self.execute_command(c, e, args[0][1:], args[1:])
